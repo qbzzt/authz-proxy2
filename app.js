@@ -4,6 +4,10 @@
 // node.js starter application for Bluemix
 //------------------------------------------------------------------------------
 
+
+// The name of the cookie to use for sessions
+var SESS_COOKIE = "authproxy_session_cookie";
+
 // This application uses express as its web server
 // for more info, see: http://expressjs.com
 var express = require('express');
@@ -28,6 +32,12 @@ var qs = require("querystring");
 // proxied application uses them, you need a different solution
 var bodyParser = require("body-parser");
 
+// We store the session in a cookie
+app.use(require("cookie-parser")());
+
+// Need UUIDs for session identification
+var uuid = require("node-uuid");
+
 
 // The host for which we are a proxy
 var host = "saas-accounting.mybluemix.net";
@@ -37,33 +47,46 @@ var appEnv = cfenv.getAppEnv();
 
 
 // The messages to send sessions
-var sessionMsg = {
-	"0": {text: "Hello"}
-};
+var sessionMsg = {};
 
-// If there is a message for a session, respond with it
-app.get("/msg/:session", function (req, res) {
-	var msg = sessionMsg[req.params.session];
+
+
+// If there is a message for the session, respond with it
+app.get("/msg", function (req, res) {
+	var id = req.cookies[SESS_COOKIE];
+	var msg = sessionMsg[id];
 	if (typeof msg === "undefined") {
 		res.send(""); // No message
 	} else {
-		sessionMsg[req.params.session] = undefined;
+		sessionMsg[id] = undefined;
 		res.send(msg.text);
 	}
 });
 
 
+var lastUuid = "0";
 
-setInterval(function() {sessionMsg[0] = {text: "M<b>ess</b>age " + new Date()}}, 10000);
+
+setInterval(function() {sessionMsg[lastUuid] = {text: "M<b>ess</b>age " + new Date()};}, 10000);
+
+
+
+// if you get getMsg.html, set a cookie
+app.get('/getMsg.html', /* @callback */ function (req, res, next) {
+	lastUuid = uuid.v4();
+    res.cookie(SESS_COOKIE, lastUuid);
+    next();
+});
 
 
 // serve the files out of ./public as our main files
 app.use(express.static(__dirname + '/public'));
 
 
-// If this is a POST request, read the body.
+// If this is a POST or PUT request, read the body.
 // bodyParser.text() normally doesn't deal with all mime types - the type parameter
 // forces that behavior
+app.put("*", bodyParser.text({type: "*/*"}));
 app.post("*", bodyParser.text({type: "*/*"}));
 
 app.all("*", function(req, res) {
@@ -93,18 +116,14 @@ app.all("*", function(req, res) {
 	});
 
 	// POST requests have a body
-	if (req.method === "POST")
+	if (req.method === "POST" || req.method === "PUT")
 		proxiedReq.write(req.body);
 
-		
-
+	
 	proxiedReq.end();
 	
 });
 
-
-// serve the files out of ./public as our main files
-// app.use(express.static(__dirname + '/public'));
 
 
 // start server on the specified port and binding host

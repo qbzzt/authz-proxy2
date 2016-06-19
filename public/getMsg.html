@@ -26,12 +26,11 @@
   		scope = $scope;
   		
   		$scope.msg = "";
-  		$scope.id = "0";
   		
   		$scope.getMsg = function() {
   			$http({
 				method: "GET",
-				url: "/msg/" + $scope.id
+				url: "/msg"
 			}).then(
 				function(response) {
 					if (response.data !== "") {
@@ -45,7 +44,7 @@
 		};
 		
 		
-		$scope.cleanup = function(msg) {
+		$scope.trust = function(msg) {
 			return $sce.trustAsHtml(msg);
 		};
 		
@@ -58,30 +57,36 @@
     
     <style type="text/css"> 
     .overlay {
+     	background-color: rgba(0, 0, 0, 0.75);
+     	z-index: 9999;
+     	color: red;
+     	display: inline-block;
+     	text-align: center;
+ 	}
+ 	
+ 	
+ 	.fill-window {
     	position: absolute;
      	top: 0;
      	left: 0;
      	right: 0;
      	bottom: 0;
-     	background-color: rgba(0, 0, 0, 0.75);
-     	z-index: 9999;
-     	color: white;
+     	height: 100%;
+     	width: 100%;
      	display: inline-block;
-     	text-align: center;
  	}
+
     </style>
        
   </head>
 
   <body>
-	Blah blah blah
-  	<div class="overlay" ng-show="msg !== ''">
-  		<p ng-bind-html="cleanup(msg)"></p>
- 	 	<br />
- 	 	<button type="button" class="btn btn-info" ng-click="msg = ''">
- 	 		Dismiss
- 	 	</button>
- 	 </div>
+ 	<div class="fill-window overlay" ng-show="msg !== ''" ng-click="msg = ''">
+  		<p ng-bind-html="trust(msg)"></p>
+  	</div>
+ 	<iframe src="./index.html" class="fill-window">
+ 	</iframe>
+	 	 
   </body>
   
 </html>

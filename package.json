@@ -10,7 +10,9 @@
 		"cfenv": "1.0.x",
 		"http": "*",
 		"body-parser": "*",
-		"querystring": "*"
+		"querystring": "*",
+		"cookie-parser": "*",
+		"node-uuid": "*"
 	},
 	"repository": {},
 	"engines": {
