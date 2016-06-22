@@ -44,9 +44,7 @@
 		};
 		
 		
-		$scope.trust = function(msg) {
-			return $sce.trustAsHtml(msg);
-		};
+		$scope.trust = $sce.trustAsHtml;
 		
 		
 		// Look for a message every second
@@ -57,7 +55,7 @@
     
     <style type="text/css"> 
     .overlay {
-     	background-color: rgba(0, 0, 0, 0.75);
+     	background-color: rgba(0, 0, 0, 0.8);
      	z-index: 9999;
      	color: red;
      	display: inline-block;
@@ -69,8 +67,6 @@
     	position: absolute;
      	top: 0;
      	left: 0;
-     	right: 0;
-     	bottom: 0;
      	height: 100%;
      	width: 100%;
      	display: inline-block;

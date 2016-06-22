@@ -32,8 +32,6 @@ var qs = require("querystring");
 // proxied application uses them, you need a different solution
 var bodyParser = require("body-parser");
 
-// We store the session in a cookie
-app.use(require("cookie-parser")());
 
 // Need UUIDs for session identification
 var uuid = require("node-uuid");
@@ -50,9 +48,13 @@ var appEnv = cfenv.getAppEnv();
 var sessionMsg = {};
 
 
+var sendSessionMsg = function(id, html) {
+	sessionMsg[id] = {text: html};
+};
+
 
 // If there is a message for the session, respond with it
-app.get("/msg", function (req, res) {
+app.get("/msg", require("cookie-parser")(), function (req, res) {
 	var id = req.cookies[SESS_COOKIE];
 	var msg = sessionMsg[id];
 	if (typeof msg === "undefined") {
@@ -67,14 +69,22 @@ app.get("/msg", function (req, res) {
 var lastUuid = "0";
 
 
-setInterval(function() {sessionMsg[lastUuid] = {text: "M<b>ess</b>age " + new Date()};}, 10000);
+setInterval(function() {sendSessionMsg(lastUuid, "M<b>ess</b>age " + new Date());}, 10000);
 
 
 
-// if you get getMsg.html, set a cookie
+// If you get getMsg.html, set a cookie and set lastUuid to send it messages
 app.get('/getMsg.html', /* @callback */ function (req, res, next) {
 	lastUuid = uuid.v4();
     res.cookie(SESS_COOKIE, lastUuid);
+    next();
+});
+
+
+// If you get proxyMsg.html, also set the cookie - but don't use lastUuid because
+// the messages proxyMsg.html gets are relevant to the connection
+app.get('/proxyMsg.html', /* @callback */ function (req, res, next) {
+    res.cookie(SESS_COOKIE, uuid.v4());
     next();
 });
 
@@ -89,6 +99,22 @@ app.use(express.static(__dirname + '/public'));
 app.put("*", bodyParser.text({type: "*/*"}));
 app.post("*", bodyParser.text({type: "*/*"}));
 
+
+// Authorize some requests, reject others
+app.get("/transaction/:amt/:debit/:credit", require("cookie-parser")(), function(req, res, next) {
+    var amt = parseInt(req.params.amt, 10);
+     
+    if (amt >= 10000) {
+    	// Send the user a message that this is unauthorized
+    	sendSessionMsg(req.cookies[SESS_COOKIE], "Over the $10,000 authorized limit");
+    	
+    	// res.send closes the connection
+        res.send("");
+    } else
+        next();
+});
+
+// Proxy everything
 app.all("*", function(req, res) {
 	var headers = req.headers;
 	headers["host"] = host;
