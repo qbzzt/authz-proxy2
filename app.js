@@ -89,6 +89,13 @@ app.get('/proxyMsg.html', /* @callback */ function (req, res, next) {
 });
 
 
+app.get('/proxyMsg2.html', /* @callback */ function (req, res, next) {
+    res.cookie(SESS_COOKIE, "aaa:" + uuid.v4());
+    next();
+});
+
+
+
 // serve the files out of ./public as our main files
 app.use(express.static(__dirname + '/public'));
 
@@ -106,10 +113,13 @@ app.get("/transaction/:amt/:debit/:credit", require("cookie-parser")(), function
      
     if (amt >= 10000) {
     	// Send the user a message that this is unauthorized
-    	sendSessionMsg(req.cookies[SESS_COOKIE], "Over the $10,000 authorized limit");
+    	sendSessionMsg(req.cookies[SESS_COOKIE], "Over the authorized limit");
     	
-    	// res.send closes the connection
-        res.send("");
+    	if (req.cookies[SESS_COOKIE].length === 36)
+    		// res.send closes the connection
+        	res.send("");
+        else
+	        res.redirect("/transaction/0/a/a");
     } else
         next();
 });
