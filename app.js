@@ -142,22 +142,40 @@ app.all("*", function(req, res) {
 	      method: req.method,
 	      headers: headers
 	};
-	
-	var retVal = "";
-	
+			
 	var proxiedReq = http.request(proxiedReqOpts, function(proxiedRes) {
-		proxiedRes.on("data", function(chunk) {retVal += chunk;});
-		proxiedRes.on("end", function() {res.send(retVal);});
-		proxiedRes.on("error", function(err) {res.send(JSON.stringify(err) + "<hr />" + retVal);});
+		var retVal = "";
+		
+		proxiedRes.on("data", function(chunk) {
+			console.log("Got a chunk of " + req.path + " with:" + chunk);
+			retVal += chunk;
+		});
+		proxiedRes.on("end", function() {
+			
+			// Sometimes we receive an end event before the actual data, I don't know
+			// why - but the easiest solution is to redirect to the same place.
+			if (retVal === "") {
+				console.log("End called with an empty retVal :-(");
+				res.redirect(req.path + query);
+			} else {
+				console.log("Responding to " + req.path + " with:" + retVal);
+				res.send(retVal);
+			}
+
+		});
+		proxiedRes.on("error", function(err) {
+			console.log("ERROR: " + req.path + " failed with:" + JSON.stringify(err));			
+			res.send(JSON.stringify(err) + "<hr />" + retVal);
+		});
 	});
+	
+	
 
 	// POST requests have a body
 	if (req.method === "POST" || req.method === "PUT")
 		proxiedReq.write(req.body);
-
-	
+			
 	proxiedReq.end();
-	
 });
 
 
